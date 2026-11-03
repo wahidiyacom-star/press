@@ -185,7 +185,7 @@ tr.sub td{background:#f7faf7;font-weight:700}tr.d1 td{border-top:2px solid #9db8
 </section>
 
 <section id="v-wlist" hidden>
-  <div class="top"><h1>কাজের তালিকা</h1><div class="tools"><select id="wFilter"><option value="all">সব</option><option value="open">বিল হয়নি</option><option value="done">বিল হয়েছে</option></select><input id="wq" placeholder="বই বা কাস্টমার খুঁজুন"><button class="btn" type="button" id="wNew">＋ নতুন এন্ট্রি</button></div></div>
+  <div class="top"><h1>কাজের তালিকা</h1><div class="tools"><select id="wFilter"><option value="all">সব</option><option value="open">বিল হয়নি</option><option value="done">বিল হয়েছে</option></select><input id="wq" placeholder="বই বা কাস্টমার খুঁজুন"><button class="btn or" type="button" id="wImg2">📷 সামারি ছবি</button><button class="btn" type="button" id="wNew">＋ নতুন এন্ট্রি</button></div></div>
   <div id="wList"></div>
 </section>
 
@@ -678,11 +678,13 @@ async function buildSummary(dt){
   imgBlob=blob;imgName='vaj-summary-'+dt+'.png';imgUrl=URL.createObjectURL(blob);
   $('imgPrev').src=imgUrl;say('imgSt','');
 }
-async function openSummary(){const dt=$('wDate').value||ymd(new Date());$('imgDay').value=dt;$('imgBox').hidden=false;await buildSummary(dt)}
+async function openSummary(dt){dt=typeof dt==='string'?dt:($('wDate').value||ymd(new Date()));$('imgDay').value=dt;$('imgBox').hidden=false;await buildSummary(dt)}
 const shiftDay=n=>{const v=$('imgDay').value||ymd(new Date()),d=new Date(v+'T12:00:00');d.setDate(d.getDate()+n);$('imgDay').value=ymd(d);buildSummary(ymd(d))};
 $('imgPrevDay').addEventListener('click',()=>shiftDay(-1));$('imgNextDay').addEventListener('click',()=>shiftDay(1));
 $('imgDay').addEventListener('change',()=>{if($('imgDay').value)buildSummary($('imgDay').value)});
-$('wImg').addEventListener('click',openSummary);
+$('wImg').addEventListener('click',()=>openSummary());
+/* তালিকা থেকে: আজ এন্ট্রি থাকলে আজ, নইলে সর্বশেষ যে দিনে এন্ট্রি আছে সেই দিন */
+$('wImg2').addEventListener('click',()=>{const t=ymd(new Date());openSummary(dayEntries(t).length?t:(DB.work.map(w=>w.date).filter(Boolean).sort().pop()||t))});
 $('imgClose').addEventListener('click',()=>{$('imgBox').hidden=true});
 $('imgBox').addEventListener('click',e=>{if(e.target===$('imgBox'))$('imgBox').hidden=true});
 $('imgDl').addEventListener('click',()=>{dlImg();say('imgSt','ছবি ডাউনলোড হয়েছে।')});
