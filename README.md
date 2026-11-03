@@ -38,13 +38,13 @@ git push -u origin main
 
 1. https://vercel.com এ **Add New → Project** → GitHub থেকে রিপোজিটরিটি **Import** করুন।
 2. Framework Preset: **Other** রাখুন। Build Command ফাঁকা রাখুন।
-3. **Environment Variables** এ তিনটি যোগ করুন:
+3. **Environment Variables** এ কমপক্ষে `DATABASE_URL` ও `APP_PASSWORD` যোগ করুন:
 
 | নাম | মান |
 |---|---|
 | `DATABASE_URL` | Neon-এর Connection string |
 | `APP_PASSWORD` | অ্যাপে ঢোকার শক্ত পাসওয়ার্ড |
-| `SESSION_SECRET` | ৩২+ অক্ষরের র‍্যান্ডম লেখা |
+| `SESSION_SECRET` | **ঐচ্ছিক।** দিলে ভালো, না দিলেও চলে (নিজে তৈরি হয়) |
 
 `SESSION_SECRET` বানাতে: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
@@ -86,7 +86,7 @@ vercel dev
 
 নতুন সংস্করণে লগইন পর্দাতেই কারণ লেখা আসে। সাধারণ কারণ:
 
-1. `APP_PASSWORD` বা `SESSION_SECRET` সেট করা নেই, অথবা `SESSION_SECRET` ১৬ অক্ষরের কম।
+1. `APP_PASSWORD` সেট করা নেই। (`SESSION_SECRET` না দিলেও চলে।)
 2. Environment Variable যোগ করার পর **Redeploy** করা হয়নি। Vercel → Deployments → সর্বশেষ ডিপ্লয়ের "..." → **Redeploy**।
 3. Variable শুধু Preview-এ সেট হয়েছে। **Production** টিক দিন।
 4. `DATABASE_URL` ভুল হলে লগইনের পর "ডেটাবেস ত্রুটি" দেখাবে। Neon থেকে পুরো লিংক (`?sslmode=require` সহ) আবার কপি করুন।
