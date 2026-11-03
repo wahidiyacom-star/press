@@ -170,7 +170,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
         <div class="form">
           <div class="f"><label for="wSheets">মোট শিট</label><input id="wSheets" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wForms">মোট ফর্মা <span class="hint">(শুধু তথ্য)</span></label><input id="wForms" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
-          <div class="f"><label for="wTotalFold">মোট ভাঁজ <span class="hint">(এর উপর বিল হয়)</span></label><input id="wTotalFold" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+          <div class="f"><label for="wTotalFold">মোট ভাঁজ <span class="hint">(এর উপর বিল হয়)</span> <span class="hint" id="wTfHint"></span></label><input id="wTotalFold" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
         </div></div>
       <div class="acts" style="margin-top:0"><button class="btn big-btn" type="submit" id="wSave">এন্ট্রি সেভ করুন</button><button class="btn sec big-btn" type="button" id="wClear">নতুন এন্ট্রি</button></div>
       <div class="st" id="wSt" role="status"></div>
@@ -378,7 +378,7 @@ function fillCust(){['wCust','pCust'].forEach(id=>{const s=$(id),v=s.value;s.inn
 function bookList(){const c=$('wCust').value;$('bookList').innerHTML=[...new Set(DB.work.filter(w=>w.cust===c).map(w=>w.book))].map(b=>`<option value="${safe(b)}">`).join('')}
 
 /* ===== daily work ===== */
-let editW=null;
+let editW=null,tfManual=false;
 const sizeName=k=>(SIZE[k]||k).replace(/^[^(]*\(|\)$/g,'');
 function chips(){
   $('sizeChips').innerHTML=Object.keys(SIZE).map(k=>`<button type="button" class="chip" data-t="wSize" data-v="${k}">${k}<small>${sizeName(k)}</small></button>`).join('');
@@ -389,7 +389,11 @@ const foldOpts=chips;
 function syncChips(){document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on',$(b.dataset.t).value===b.dataset.v))}
 $('v-work').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const s=$(b.dataset.t);s.value=s.value===b.dataset.v?'':b.dataset.v;wCalc()});
 function wCalc(){
-  const sz=$('wSize').value,f=$('wFold').value,sh=num($('wSheets').value),tf=num($('wTotalFold').value),cid=$('wCust').value,dt=$('wDate').value;let rate=null;
+  const sz=$('wSize').value,f=$('wFold').value,sh=num($('wSheets').value),cid=$('wCust').value,dt=$('wDate').value;let rate=null;
+  /* মোট ভাঁজ: অটো = শিট × ভাঁজ সংখ্যা; ম্যানুয়াল লিখলে সেটাই থাকবে, খালি করলে আবার অটো */
+  if(!tfManual){const a=sh!=null&&f?Math.round(sh*Number(f)*100)/100:null;$('wTotalFold').value=a!=null?String(a):''}
+  $('wTfHint').textContent=tfManual?'(ম্যানুয়াল — খালি করলে অটো হবে)':'(অটো: শিট × ভাঁজ)';
+  const tf=num($('wTotalFold').value);
   if(sz&&f)rate=(editW&&editW.size===sz&&editW.foldN===f&&editW.rate!=null)?editW.rate:num(rates[sz+f]);
   const bill=rate!=null&&tf!=null?tf*rate:null;syncChips();
   const td=DB.work.filter(w=>w.date===dt&&(!editW||w.id!==editW.id)),c=cid&&cid!=='__new'?cust(cid):null;
@@ -404,7 +408,8 @@ function wCalc(){
     +(c&&c.name&&acct(cid).due>0?`<div class="sf">কাস্টমারের বর্তমান বকেয়া: ${money(acct(cid).due)}</div>`:'');
   return{rate,bill};
 }
-function wReset(keep){const k=keep?{d:$('wDate').value,c:$('wCust').value,b:$('wBook').value}:null;editW=null;$('wForm').reset();$('wDate').value=k?k.d:ymd(new Date());if(k){$('wCust').value=k.c;$('wBook').value=k.b}$('wSize').value=S.size;$('wFold').value=S.fold;$('wTitle').textContent='দৈনিক কাজ এন্ট্রি';$('wSave').textContent='এন্ট্রি সেভ করুন';wCalc();bookList()}
+function wReset(keep){const k=keep?{d:$('wDate').value,c:$('wCust').value,b:$('wBook').value}:null;editW=null;tfManual=false;$('wForm').reset();$('wDate').value=k?k.d:ymd(new Date());if(k){$('wCust').value=k.c;$('wBook').value=k.b}$('wSize').value=S.size;$('wFold').value=S.fold;$('wTitle').textContent='দৈনিক কাজ এন্ট্রি';$('wSave').textContent='এন্ট্রি সেভ করুন';wCalc();bookList()}
+$('wTotalFold').addEventListener('input',()=>{tfManual=$('wTotalFold').value.trim()!==''});
 ['wSize','wFold','wSheets','wForms','wTotalFold','wBook','wDate','wCust'].forEach(k=>['input','change'].forEach(ev=>$(k).addEventListener(ev,wCalc)));
 $('wClear').addEventListener('click',()=>{wReset();say('wSt','')});
 $('wNew').addEventListener('click',()=>{wReset();say('wSt','');show('work')});
@@ -433,7 +438,7 @@ function renderWork(){
 $('wq').addEventListener('input',renderWork);$('wFilter').addEventListener('change',renderWork);
 $('wList').addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;const w=DB.work.find(x=>x.id===b.dataset.id);if(!w)return;
   if(b.dataset.a==='del'&&confirm('এই এন্ট্রি ডিলিট করবেন?')){DB.work=DB.work.filter(x=>x.id!==w.id);persist();renderWork()}
-  if(b.dataset.a==='edit'){show('work');editW=w;Object.entries(WM).forEach(([id,k])=>$(id).value=w[k]||'');bookList();$('wBook').value=w.book||'';$('wTitle').textContent='এন্ট্রি এডিট';$('wSave').textContent='পরিবর্তন সেভ করুন';say('wSt','');wCalc()}});
+  if(b.dataset.a==='edit'){show('work');editW=w;Object.entries(WM).forEach(([id,k])=>$(id).value=w[k]||'');bookList();$('wBook').value=w.book||'';{const s=num(w.sheets),t=num(w.totalFold);tfManual=t!=null&&!(s!=null&&w.foldN&&Math.round(s*Number(w.foldN)*100)/100===t)}$('wTitle').textContent='এন্ট্রি এডিট';$('wSave').textContent='পরিবর্তন সেভ করুন';say('wSt','');wCalc()}});
 
 /* ===== invoices ===== */
 const head=sub=>`<div class="ph"><h1>${safe(S.name)}</h1><p>${safe([S.addr,S.phone].filter(Boolean).join(' · '))}</p><p><b>${sub}</b></p></div>`;
