@@ -88,6 +88,10 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
 #login form{background:#fff;color:var(--ink);border-radius:16px;padding:26px 22px;width:100%;max-width:360px;display:grid;gap:12px}
 #login h2{margin:0;font-size:20px}#login p{margin:0;color:var(--mut);font-size:14px}
 .lg2{width:60px;height:60px;border-radius:50%;background:var(--side);color:#f0d878;font:800 32px/60px Georgia,serif;margin:0 auto}
+tr.sub td{background:#f7faf7;font-weight:700}tr.d1 td{border-top:2px solid #9db8a2}td small{color:var(--mut)}
+#imgBox{position:fixed;inset:0;z-index:300;background:#000b;display:flex;align-items:center;justify-content:center;padding:14px}
+.ibox{background:#fff;border-radius:14px;padding:14px;max-width:560px;width:100%;max-height:100%;overflow:auto}
+.ibox img{width:100%;display:block;border-radius:8px;border:1px solid var(--line)}.ibox .acts{margin-top:12px}.ibox .btn{flex:1 1 130px}
 @media(max-width:860px){
  .app{display:block}
  aside{width:auto;height:auto;position:sticky;top:0;z-index:40;overflow:visible}
@@ -111,7 +115,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
  .fg{padding:14px}.chip{min-height:54px}
 }
 @media(max-width:480px){.form,.set{grid-template-columns:1fr}.f.full{grid-column:auto}.rates{grid-template-columns:1.2fr 1fr 1fr}.mini b{font-size:14px}}
-@media print{@page{size:A4;margin:16mm}body{background:#fff}.app,#boot,#login{display:none!important}#printReport{display:block}th,td{font-size:12pt}}
+@media print{@page{size:A4;margin:14mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.app,#boot,#login,#imgBox{display:none!important}#printReport{display:block}th,td{font-size:11pt}thead{display:table-header-group}tr{page-break-inside:avoid}h2.sec{page-break-after:avoid}}
 </style>
 </head>
 <body>
@@ -173,7 +177,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
           <div class="f"><label for="wTotalFold">মোট ভাঁজ <span class="hint">(এর উপর বিল হয়)</span> <span class="hint" id="wTfHint"></span></label><input id="wTotalFold" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wRate">রেট <span class="hint">(প্রতি হাজার ভাঁজে, নিজে লিখুন)</span></label><input id="wRate" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
         </div></div>
-      <div class="acts" style="margin-top:0"><button class="btn big-btn" type="submit" id="wSave">এন্ট্রি সেভ করুন</button><button class="btn sec big-btn" type="button" id="wClear">নতুন এন্ট্রি</button></div>
+      <div class="acts" style="margin-top:0"><button class="btn big-btn" type="submit" id="wSave">এন্ট্রি সেভ করুন</button><button class="btn sec big-btn" type="button" id="wClear">নতুন এন্ট্রি</button><button class="btn or big-btn" type="button" id="wImg">📷 দিনের সামারি ছবি</button></div>
       <div class="st" id="wSt" role="status"></div>
     </div>
     <aside class="wside" aria-live="polite"><div id="wSum"></div></aside>
@@ -231,6 +235,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
 
 <section id="v-month" hidden>
   <div class="top"><h1>মাসিক রিপোর্ট</h1><button class="btn" id="printMonth">প্রিন্ট করুন</button></div>
+  <div class="card plain"><h2>মাসের কাজের রিপোর্ট <span class="hint">(কাস্টমার ও দিন অনুযায়ী)</span></h2><div class="tools"><input id="rMonth" type="month"><button class="btn or" type="button" id="printWork">🖨️ কাজের রিপোর্ট প্রিন্ট</button></div><div id="rBody" style="margin-top:6px"></div></div>
   <div class="card plain scroll"><table><thead><tr><th>মাস</th><th class="n">শিট</th><th class="n">বিল</th><th class="n">আদায়</th><th class="n">খরচ</th><th class="n">নিট (আদায় − খরচ)</th></tr></thead><tbody id="monthRows"></tbody></table></div>
 </section>
 
@@ -261,6 +266,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
 </main>
 </div>
 <section id="printReport"></section>
+<div id="imgBox" hidden><div class="ibox"><img id="imgPrev" alt="দৈনিক সামারি"><div class="acts"><button class="btn or" type="button" id="imgShare">হোয়াটসঅ্যাপে পাঠান</button><button class="btn sec" type="button" id="imgDl">ডাউনলোড</button><button class="btn sec" type="button" id="imgClose">বন্ধ করুন</button></div><div class="st" id="imgSt" role="status"></div></div></div>
 <div id="boot">লোড হচ্ছে…</div>
 <div id="login" hidden><form id="loginForm"><div class="lg2">W</div><h2>Wahidiya Press</h2><p>পাসওয়ার্ড দিয়ে প্রবেশ করুন</p>
   <input id="lpw" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড" required>
@@ -539,7 +545,7 @@ const mName=k=>{const [y,m]=k.split('-');return MN[m-1]?MN[m-1]+' '+toBn(y):k};
 function monthTable(){const D=monthData();const T={sh:sum(D,x=>x.sh),bill:sum(D,x=>x.bill),coll:sum(D,x=>x.coll),exp:sum(D,x=>x.exp)};
   return D.length?D.map(x=>`<tr><td>${mName(x.k)}</td><td class="n">${bn(x.sh)}</td><td class="n">${bn(x.bill)}</td><td class="n">${bn(x.coll)}</td><td class="n">${bn(x.exp)}</td><td class="n">${bn(x.coll-x.exp)}</td></tr>`).join('')+`<tr class="tot"><td>সর্বমোট</td><td class="n">${bn(T.sh)}</td><td class="n">${bn(T.bill)}</td><td class="n">${bn(T.coll)}</td><td class="n">${bn(T.exp)}</td><td class="n">${bn(T.coll-T.exp)}</td></tr>`:'<tr><td colspan="6" class="empty">কোনো তথ্য নেই।</td></tr>'}
 const MHEAD='<thead><tr><th>মাস</th><th class="n">শিট</th><th class="n">বিল</th><th class="n">আদায়</th><th class="n">খরচ</th><th class="n">নিট</th></tr></thead>';
-function renderMonth(){$('monthRows').innerHTML=monthTable()}
+function renderMonth(){$('monthRows').innerHTML=monthTable();renderRep()}
 $('printMonth').addEventListener('click',()=>printHTML(head('মাসিক হিসাব রিপোর্ট')+'<table>'+MHEAD+'<tbody>'+monthTable()+'</tbody></table>'));
 
 /* ===== dashboard ===== */
@@ -595,6 +601,120 @@ $('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if
     ['work','cust','inv','pay','exp'].forEach(k=>{const ids=new Set(DB[k].map(r=>r.id));(src[k]||[]).forEach(r=>{if(r&&r.id&&!ids.has(r.id))DB[k].push(k==='work'&&r.cust===undefined?{...r,cust:'',inv:null}:r)})});
     DB.seq=Math.max(DB.seq,src.seq||0);persist();if(d.rates&&!Object.values(rates).some(Boolean)){rates=d.rates;persist();initSettings()}fillCust();say('setSt','ব্যাকআপ ফেরত আনা হয়েছে।')}catch(_){say('setSt','ব্যাকআপ ফাইলটি পড়া যায়নি।',1)}e.target.value=''});
 $('wipeBtn').addEventListener('click',()=>{if(confirm('সব কাজ, কাস্টমার, ইনভয়েস, টাকা ও খরচ মুছে যাবে। ব্যাকআপ নিয়েছেন তো?')&&confirm('নিশ্চিত? এটি আর ফেরানো যাবে না।')){DB={work:[],cust:[],inv:[],pay:[],exp:[],seq:0};persist();fillCust();say('setSt','সব ডেটা মুছে ফেলা হয়েছে।')}});
+
+/* ===== দিনের সামারি ছবি (হোয়াটসঅ্যাপ) ও মাসের কাজের রিপোর্ট ===== */
+const rFo=w=>num(w.totalFold)||0,rVal=w=>Number(w.bill)||0,rSh=w=>num(w.sheets)||0;
+const rTot=L=>({n:L.length,sh:sum(L,rSh),fold:sum(L,rFo),val:sum(L,rVal)});
+const rByDI=(a,b)=>(a.date||'').localeCompare(b.date||'')||a.id.localeCompare(b.id);
+const dayEntries=dt=>DB.work.filter(w=>w.date===dt).sort(rByDI);
+const monthList=m=>DB.work.filter(w=>(w.date||'').startsWith(m)).sort(rByDI);
+const wdOf=d=>WD[new Date(d+'T12:00:00').getDay()];
+const custName=w=>w.cust?(cust(w.cust).name||'—'):'কাস্টমার নেই';
+const FF='"Noto Sans Bengali","Hind Siliguri","Nirmala UI","Vrinda","Kalpurush",system-ui,sans-serif';
+function graphemes(w){return window.Intl&&Intl.Segmenter?[...new Intl.Segmenter('bn',{granularity:'grapheme'}).segment(w)].map(s=>s.segment):Array.from(w)}
+function wrapText(ctx,text,maxW,maxLines){
+  const words=String(text||'').split(/\s+/).filter(Boolean),lines=[];let cur='';
+  for(const w of words){
+    const t=cur?cur+' '+w:w;
+    if(ctx.measureText(t).width<=maxW){cur=t;continue}
+    if(cur){lines.push(cur);cur=''}
+    if(ctx.measureText(w).width<=maxW){cur=w}
+    else{let part='';for(const ch of graphemes(w)){if(part&&ctx.measureText(part+ch).width>maxW){lines.push(part);part=ch}else part+=ch}cur=part}
+  }
+  if(cur)lines.push(cur);
+  if(lines.length>maxLines){lines.length=maxLines;let last=lines[maxLines-1];while(last&&ctx.measureText(last+'…').width>maxW)last=last.slice(0,-1);lines[maxLines-1]=last+'…'}
+  return lines.length?lines:[''];
+}
+function summaryCanvas(dt){
+  const L=dayEntries(dt),T=rTot(L),W=1080,P=48,CW=W-2*P;
+  const cols=[{k:'#',w:52,a:'c'},{k:'কাস্টমার',w:206},{k:'বইয়ের নাম',w:288},{k:'ভাঁজ',w:136,a:'r'},{k:'রেট',w:96,a:'r'},{k:'টাকা',w:206,a:'r'}];
+  const m=document.createElement('canvas').getContext('2d');m.font='500 28px '+FF;
+  const rows=L.map((w,i)=>{const c=wrapText(m,custName(w),cols[1].w-24,2),b=wrapText(m,w.book||'নামহীন',cols[2].w-24,2);return{w,i,c,b,h:Math.max(c.length,b.length)*38+28}});
+  const headH=236,tileH=136,tblH=64,totH=88,footH=84,gap=20;
+  const H=headH+8+34+tileH+34+tblH+sum(rows,r=>r.h)+totH+footH;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.textBaseline='alphabetic';
+  const rr=(a,b,c,d,r,fill)=>{x.beginPath();if(x.roundRect)x.roundRect(a,b,c,d,r);else x.rect(a,b,c,d);x.fillStyle=fill;x.fill()};
+  const fit=(t,wt,sz,maxW)=>{let s=sz;do{x.font=wt+' '+s+'px '+FF;s-=2}while(x.measureText(t).width>maxW&&s>14)};
+  x.fillStyle='#f4f6f3';x.fillRect(0,0,W,H);
+  x.fillStyle='#14401f';x.fillRect(0,0,W,headH);x.fillStyle='#f26a2e';x.fillRect(0,headH,W,8);
+  x.fillStyle='#fff';fit(S.name||'Wahidiya Press','800',58,CW);x.fillText(S.name||'Wahidiya Press',P,96);
+  x.fillStyle='#ffb98f';x.font='600 34px '+FF;x.fillText('দৈনিক ভাঁজ সামারি',P,152);
+  x.fillStyle='#e8f2ea';x.font='500 32px '+FF;x.fillText(wdOf(dt)+' · '+fd(dt),P,204);
+  const tw=(CW-2*gap)/3,ty=headH+8+34;
+  [['মোট ভাঁজ',bn(T.fold),'#14401f'],['মোট টাকা',money(T.val),'#f26a2e'],['এন্ট্রি',bn(T.n)+'টি','#1f7a43']].forEach((t,i)=>{
+    const tx=P+i*(tw+gap);rr(tx,ty,tw,tileH,14,'#fff');x.fillStyle=t[2];x.fillRect(tx,ty,tw,6);
+    x.fillStyle='#667068';x.font='500 26px '+FF;x.fillText(t[0],tx+24,ty+52);
+    x.fillStyle=t[2];fit(t[1],'800',54,tw-48);x.fillText(t[1],tx+24,ty+112)});
+  let y=ty+tileH+34;rr(P,y,CW,tblH,10,'#14401f');
+  let cx=P;cols.forEach(c=>{x.fillStyle='#fff';x.font='700 26px '+FF;x.textAlign=c.a==='r'?'right':c.a==='c'?'center':'left';
+    x.fillText(c.k,c.a==='r'?cx+c.w-14:c.a==='c'?cx+c.w/2:cx+14,y+42);cx+=c.w});
+  x.textAlign='left';y+=tblH;
+  rows.forEach(r=>{
+    x.fillStyle=r.i%2?'#f1f6f1':'#fff';x.fillRect(P,y,CW,r.h);x.fillStyle='#e3e8e2';x.fillRect(P,y+r.h-1,CW,1);
+    const mid=y+r.h/2+10;let px=P;
+    x.fillStyle='#667068';x.font='500 26px '+FF;x.textAlign='center';x.fillText(bn(r.i+1),px+cols[0].w/2,mid);px+=cols[0].w;
+    x.textAlign='left';x.fillStyle='#17301f';x.font='500 28px '+FF;
+    r.c.forEach((l,li)=>x.fillText(l,px+14,y+14+28+li*38));px+=cols[1].w;
+    x.font='600 28px '+FF;r.b.forEach((l,li)=>x.fillText(l,px+14,y+14+28+li*38));px+=cols[2].w;
+    x.textAlign='right';x.font='700 28px '+FF;x.fillText(bn(rFo(r.w)),px+cols[3].w-14,mid);px+=cols[3].w;
+    x.fillStyle='#667068';x.font='500 26px '+FF;x.fillText(r.w.rate!=null?bn(r.w.rate):'—',px+cols[4].w-14,mid);px+=cols[4].w;
+    x.fillStyle='#1f7a43';x.font='700 28px '+FF;x.fillText(bn(rVal(r.w)),px+cols[5].w-14,mid);x.textAlign='left';y+=r.h});
+  rr(P,y,CW,totH,10,'#14401f');x.fillStyle='#fff';x.font='800 32px '+FF;x.fillText('মোট',P+24,y+56);
+  x.textAlign='right';x.fillText(bn(T.fold),P+cols[0].w+cols[1].w+cols[2].w+cols[3].w-14,y+56);
+  x.fillStyle='#f0d878';x.fillText(money(T.val),P+CW-14,y+56);x.textAlign='center';
+  x.fillStyle='#667068';x.font='500 24px '+FF;x.fillText([S.name,S.phone].filter(Boolean).join(' · '),W/2,y+totH+48);x.textAlign='left';
+  return cv;
+}
+let imgBlob=null,imgName='',imgUrl='',imgDate='';
+function dlImg(){const a=document.createElement('a');a.href=imgUrl;a.download=imgName;document.body.appendChild(a);a.click();a.remove()}
+async function openSummary(){
+  const dt=$('wDate').value||ymd(new Date());
+  if(!dayEntries(dt).length){alert('এই তারিখে কোনো এন্ট্রি নেই।');return}
+  const blob=await new Promise(r=>summaryCanvas(dt).toBlob(r,'image/png'));
+  if(!blob){alert('ছবি বানানো যায়নি।');return}
+  if(imgUrl)URL.revokeObjectURL(imgUrl);
+  imgBlob=blob;imgDate=dt;imgName='vaj-summary-'+dt+'.png';imgUrl=URL.createObjectURL(blob);
+  $('imgPrev').src=imgUrl;say('imgSt','');$('imgBox').hidden=false;
+}
+$('wImg').addEventListener('click',openSummary);
+$('imgClose').addEventListener('click',()=>{$('imgBox').hidden=true});
+$('imgBox').addEventListener('click',e=>{if(e.target===$('imgBox'))$('imgBox').hidden=true});
+$('imgDl').addEventListener('click',()=>{dlImg();say('imgSt','ছবি ডাউনলোড হয়েছে।')});
+$('imgShare').addEventListener('click',async()=>{
+  const T=rTot(dayEntries(imgDate)),f=new File([imgBlob],imgName,{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){
+    try{await navigator.share({files:[f],title:S.name+' – দৈনিক সামারি',text:`${S.name} – ${fd(imgDate)}\nমোট ভাঁজ: ${bn(T.fold)}\nমোট টাকা: ${money(T.val)}`})}catch(e){}
+  }else{dlImg();say('imgSt','এই ডিভাইস থেকে সরাসরি শেয়ার হচ্ছে না। ছবি ডাউনলোড হয়েছে, হোয়াটসঅ্যাপে গ্রুপে ছবিটি পাঠান।',1)}
+});
+
+function repCust(L){
+  const g={};L.forEach(w=>{const k=w.cust||'';(g[k]=g[k]||[]).push(w)});
+  const rows=Object.values(g).map(a=>({name:custName(a[0]),...rTot(a)})).sort((a,b)=>b.val-a.val),T=rTot(L);
+  return `<h2 class="sec">কাস্টমার অনুযায়ী</h2><div class="scroll"><table><thead><tr><th>কাস্টমার</th><th class="n">এন্ট্রি</th><th class="n">শিট</th><th class="n">মোট ভাঁজ</th><th class="n">টাকা (${safe(S.cur)})</th></tr></thead><tbody>`
+    +rows.map(r=>`<tr><td>${safe(r.name)}</td><td class="n">${bn(r.n)}</td><td class="n">${bn(r.sh)}</td><td class="n">${bn(r.fold)}</td><td class="n">${bn(r.val)}</td></tr>`).join('')
+    +`<tr class="tot"><td>মোট</td><td class="n">${bn(T.n)}</td><td class="n">${bn(T.sh)}</td><td class="n">${bn(T.fold)}</td><td class="n">${bn(T.val)}</td></tr></tbody></table></div>`;
+}
+function repDays(L){
+  const g={};L.forEach(w=>(g[w.date]=g[w.date]||[]).push(w));const T=rTot(L);
+  const body=Object.keys(g).sort().map(d=>{const a=g[d],t=rTot(a);
+    return a.map((w,i)=>`<tr class="${i?'':'d1'}"><td>${i?'':fd(d)+' <small>'+wdOf(d)+'</small>'}</td><td>${safe(custName(w))}</td><td>${safe(w.book||'নামহীন')}</td><td class="n">${bn(rSh(w))}</td><td class="n">${bn(rFo(w))}</td><td class="n">${w.rate!=null?bn(w.rate):'—'}</td><td class="n">${bn(rVal(w))}</td></tr>`).join('')
+      +(a.length>1?`<tr class="sub"><td colspan="3" class="n">${fd(d)} – দিনের মোট</td><td class="n">${bn(t.sh)}</td><td class="n">${bn(t.fold)}</td><td></td><td class="n">${bn(t.val)}</td></tr>`:'')}).join('');
+  return `<h2 class="sec">দিন অনুযায়ী বিস্তারিত</h2><div class="scroll"><table><thead><tr><th style="width:18%">তারিখ</th><th>কাস্টমার</th><th>বই</th><th class="n">শিট</th><th class="n">মোট ভাঁজ</th><th class="n">রেট</th><th class="n">টাকা (${safe(S.cur)})</th></tr></thead><tbody>${body}<tr class="tot"><td colspan="3" class="n">মাসের সর্বমোট</td><td class="n">${bn(T.sh)}</td><td class="n">${bn(T.fold)}</td><td></td><td class="n">${bn(T.val)}</td></tr></tbody></table></div>`;
+}
+function renderRep(){
+  if(!$('rMonth').value)$('rMonth').value=ymd(new Date()).slice(0,7);
+  const L=monthList($('rMonth').value);
+  $('rBody').innerHTML=L.length?repCust(L)+repDays(L):'<div class="empty">এই মাসে কোনো এন্ট্রি নেই।</div>';
+}
+$('rMonth').addEventListener('change',renderRep);
+$('printWork').addEventListener('click',()=>{
+  const m=$('rMonth').value||ymd(new Date()).slice(0,7),L=monthList(m);
+  if(!L.length){alert('এই মাসে কোনো এন্ট্রি নেই।');return}
+  const T=rTot(L),dn=new Set(L.map(w=>w.date)).size;
+  printHTML(head('মাসিক কাজের রিপোর্ট – '+mName(m))
+    +`<table style="margin-bottom:6px"><tr><th>কাজের দিন</th><th>এন্ট্রি</th><th>মোট শিট</th><th>মোট ভাঁজ</th><th>মোট টাকা</th></tr><tr><td>${bn(dn)} দিন</td><td>${bn(T.n)}টি</td><td>${bn(T.sh)}</td><td><b>${bn(T.fold)}</b></td><td><b>${money(T.val)}</b></td></tr></table>`
+    +repCust(L)+repDays(L)+`<div class="sign"><div>প্রস্তুতকারী</div><div>কর্তৃপক্ষের স্বাক্ষর</div></div><p style="text-align:center;color:#667068;font-size:10pt;margin-top:14px">প্রিন্টের তারিখ: ${fd(ymd(new Date()))}</p>`);
+});
 
 /* ===== init ===== */
 boot();
