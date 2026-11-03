@@ -1,8 +1,10 @@
-const { makeToken, setCookie, checkPassword, readBody, MAX_AGE } = require('../lib/auth');
+const { configProblems, makeToken, setCookie, checkPassword, readBody, MAX_AGE } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+  const problems = configProblems(false);
+  if (problems.length) return res.status(500).json({ error: 'config', problems });
   try {
     const { password } = await readBody(req);
     if (typeof password !== 'string' || !checkPassword(password)) {

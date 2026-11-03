@@ -305,7 +305,7 @@ async function boot(){
   $('boot').hidden=false;$('boot').textContent='লোড হচ্ছে…';
   let r;try{r=await API('/api/data')}catch(e){$('boot').textContent='সার্ভারে সংযোগ করা যাচ্ছে না। ইন্টারনেট দেখে পেজ রিফ্রেশ করুন।';return}
   if(r.status===401){showLogin();return}
-  if(!r.ok){$('boot').textContent='ডেটা লোড করা যায়নি (কোড '+r.status+')। কিছুক্ষণ পরে আবার চেষ্টা করুন।';return}
+  if(!r.ok){let j={};try{j=await r.json()}catch(_){}$('boot').textContent='ডেটা লোড করা যায়নি। '+(j.problems?j.problems.join(', ')+'। Vercel-এ Environment Variable দিয়ে Redeploy করুন।':j.detail?'ডেটাবেস ত্রুটি: '+j.detail:'কোড '+r.status+'। কিছুক্ষণ পরে আবার চেষ্টা করুন।');return}
   const {rows}=await r.json();
   DB={work:[],cust:[],inv:[],pay:[],exp:[],seq:0};snap={};
   rows.forEach(({kind,id,data})=>{
@@ -325,7 +325,7 @@ async function boot(){
 }
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();say('lst','');$('lbtn').disabled=true;
   try{const r=await API('/api/login',{method:'POST',body:JSON.stringify({password:$('lpw').value})});
-    if(r.ok){$('lpw').value='';$('login').hidden=true;booted?flush():boot()}else say('lst',r.status===401?'পাসওয়ার্ড ভুল।':'সার্ভারে সমস্যা, আবার চেষ্টা করুন।',1)}
+    if(r.ok){$('lpw').value='';$('login').hidden=true;booted?flush():boot()}else{let j={};try{j=await r.json()}catch(_){}say('lst',r.status===401?'পাসওয়ার্ড ভুল।':j.problems?'সার্ভারের কনফিগারেশন ঠিক নেই: '+j.problems.join(', ')+'। Vercel → Settings → Environment Variables ঠিক করে Redeploy করুন।':'সার্ভারে সমস্যা, আবার চেষ্টা করুন।',1)}}
   catch(_){say('lst','সংযোগ করা যায়নি।',1)}$('lbtn').disabled=false});
 $('logoutBtn').addEventListener('click',async()=>{if((dirty||syncing)&&!confirm('কিছু পরিবর্তন এখনো সেভ হয়নি। তবুও লগআউট করবেন?'))return;try{await API('/api/logout',{method:'POST'})}catch(_){}location.reload()});
 window.addEventListener('beforeunload',e=>{if(dirty||syncing){e.preventDefault();e.returnValue=''}});

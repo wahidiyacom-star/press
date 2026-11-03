@@ -1,4 +1,4 @@
-const { isAuthed, readBody } = require('../lib/auth');
+const { configProblems, isAuthed, readBody } = require('../lib/auth');
 const { ensure } = require('../lib/db');
 
 const KINDS = new Set(['work', 'cust', 'inv', 'pay', 'exp', 'cfg', 'meta']);
@@ -6,6 +6,8 @@ const KINDS = new Set(['work', 'cust', 'inv', 'pay', 'exp', 'cfg', 'meta']);
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+  const problems = configProblems(true);
+  if (problems.length) return res.status(500).json({ error: 'config', problems });
   try {
     if (!isAuthed(req)) return res.status(401).json({ error: 'auth' });
     const { changes } = await readBody(req);
@@ -32,6 +34,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true, n: stmts.length });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: 'server' });
+    return res.status(500).json({ error: 'db', detail: String(e && e.message).slice(0, 160) });
   }
 };
