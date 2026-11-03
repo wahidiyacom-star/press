@@ -171,6 +171,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
           <div class="f"><label for="wSheets">মোট শিট</label><input id="wSheets" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wForms">মোট ফর্মা <span class="hint">(শুধু তথ্য)</span></label><input id="wForms" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wTotalFold">মোট ভাঁজ <span class="hint">(এর উপর বিল হয়)</span> <span class="hint" id="wTfHint"></span></label><input id="wTotalFold" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+          <div class="f"><label for="wRate">রেট <span class="hint">(প্রতি ভাঁজ, নিজে লিখুন)</span></label><input id="wRate" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
         </div></div>
       <div class="acts" style="margin-top:0"><button class="btn big-btn" type="submit" id="wSave">এন্ট্রি সেভ করুন</button><button class="btn sec big-btn" type="button" id="wClear">নতুন এন্ট্রি</button></div>
       <div class="st" id="wSt" role="status"></div>
@@ -252,7 +253,6 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
   <div class="card plain"><h2>তালিকা কনফিগার <span class="hint">(কমা দিয়ে আলাদা করুন)</span></h2><div class="set">
     <div class="f full"><label for="sCats">খরচের খাত</label><input id="sCats"></div>
     <div class="f full"><label for="sMeth">টাকা গ্রহণের মাধ্যম</label><input id="sMeth"></div></div></div>
-  <div class="card plain"><h2>রেট টেবিল (প্রতি শিট)</h2><p class="hint">রেট বদলালে আগের এন্ট্রি ও ইনভয়েসের টাকা বদলাবে না।</p><div class="rates" id="rateGrid"></div></div>
   <div class="card plain"><h2>ডেটা ব্যবস্থাপনা</h2>
     <div class="acts" style="margin-top:0"><button class="btn sec" id="exportBtn">ব্যাকআপ নিন</button><button class="btn sec" id="importBtn">ব্যাকআপ ফেরত আনুন</button><button class="btn dg" id="wipeBtn">সব ডেটা মুছুন</button></div>
     <input type="file" id="importFile" accept=".json,application/json" hidden><div class="st" id="setSt"></div></div>
@@ -394,13 +394,13 @@ function wCalc(){
   if(!tfManual){const a=sh!=null&&f?Math.round(sh*Number(f)*100)/100:null;$('wTotalFold').value=a!=null?String(a):''}
   $('wTfHint').textContent=tfManual?'(ম্যানুয়াল — খালি করলে অটো হবে)':'(অটো: শিট × ভাঁজ)';
   const tf=num($('wTotalFold').value);
-  if(sz&&f)rate=(editW&&editW.size===sz&&editW.foldN===f&&editW.rate!=null)?editW.rate:num(rates[sz+f]);
+  rate=num($('wRate').value);
   const bill=rate!=null&&tf!=null?tf*rate:null;syncChips();
   const td=DB.work.filter(w=>w.date===dt&&(!editW||w.id!==editW.id)),c=cid&&cid!=='__new'?cust(cid):null;
   const row=(k,v)=>v?`<div class="sr"><span>${k}</span><b>${v}</b></div>`:'';
   const bk=$('wBook').value.trim(),fm=$('wForms').value.trim();
   $('wSum').innerHTML=`<div class="sl">মোট টাকা</div><div class="sa">${bill!=null?money(bill):'—'}</div>`
-    +(sz&&f&&rate==null?'<div class="sw">এই সাইজ ও ভাঁজের রেট দেওয়া নেই। সেটিংসে রেট দিন।</div>':'')
+    +(tf!=null&&rate==null?'<div class="sw">রেট লিখুন। বিল = মোট ভাঁজ × রেট।</div>':'')
     +(tf==null&&(sh!=null||sz||f)?'<div class="sw">মোট ভাঁজ লিখুন। বিল মোট ভাঁজের উপর হয়।</div>':'')
     +row('কাস্টমার',c&&c.name?safe(c.name):'')+row('বই',safe(bk))+row('সাইজ',sz?safe(SIZE[sz]):'')+row('ভাঁজ',f?bn(f)+' ভাঁজ ('+bn(pages(f))+' পৃষ্ঠা)':'')+row('শিট',sh!=null?bn(sh):'')+row('মোট ভাঁজ',tf!=null?bn(tf):'')+row('রেট',rate!=null?money(rate):'')+row('ফর্মা',fm?safe(fm):'')
     +(!sz&&!f&&!c&&!bk&&sh==null?'<div class="sf" style="margin-top:0">তথ্য দিলে এখানে হিসাব দেখাবে।</div>':'')
@@ -408,18 +408,19 @@ function wCalc(){
     +(c&&c.name&&acct(cid).due>0?`<div class="sf">কাস্টমারের বর্তমান বকেয়া: ${money(acct(cid).due)}</div>`:'');
   return{rate,bill};
 }
-function wReset(keep){const k=keep?{d:$('wDate').value,c:$('wCust').value,b:$('wBook').value}:null;editW=null;tfManual=false;$('wForm').reset();$('wDate').value=k?k.d:ymd(new Date());if(k){$('wCust').value=k.c;$('wBook').value=k.b}$('wSize').value=S.size;$('wFold').value=S.fold;$('wTitle').textContent='দৈনিক কাজ এন্ট্রি';$('wSave').textContent='এন্ট্রি সেভ করুন';wCalc();bookList()}
+function wReset(keep){const k=keep?{d:$('wDate').value,c:$('wCust').value,b:$('wBook').value,r:$('wRate').value}:null;editW=null;tfManual=false;$('wForm').reset();$('wDate').value=k?k.d:ymd(new Date());if(k){$('wCust').value=k.c;$('wBook').value=k.b;$('wRate').value=k.r}$('wSize').value=S.size;$('wFold').value=S.fold;$('wTitle').textContent='দৈনিক কাজ এন্ট্রি';$('wSave').textContent='এন্ট্রি সেভ করুন';wCalc();bookList()}
 $('wTotalFold').addEventListener('input',()=>{tfManual=$('wTotalFold').value.trim()!==''});
-['wSize','wFold','wSheets','wForms','wTotalFold','wBook','wDate','wCust'].forEach(k=>['input','change'].forEach(ev=>$(k).addEventListener(ev,wCalc)));
+['wSize','wFold','wSheets','wForms','wTotalFold','wRate','wBook','wDate','wCust'].forEach(k=>['input','change'].forEach(ev=>$(k).addEventListener(ev,wCalc)));
 $('wClear').addEventListener('click',()=>{wReset();say('wSt','')});
 $('wNew').addEventListener('click',()=>{wReset();say('wSt','');show('work')});
-const WM={wDate:'date',wCust:'cust',wBook:'book',wSize:'size',wFold:'foldN',wSheets:'sheets',wForms:'forms',wTotalFold:'totalFold'};
+const WM={wDate:'date',wCust:'cust',wBook:'book',wSize:'size',wFold:'foldN',wSheets:'sheets',wForms:'forms',wTotalFold:'totalFold',wRate:'rate'};
 $('wForm').addEventListener('submit',e=>{e.preventDefault();
   const d={};Object.entries(WM).forEach(([id,k])=>d[k]=$(id).value.trim());d.weekday=d.date?WD[new Date(d.date+'T12:00:00').getDay()]:'';
   if(!d.cust){say('wSt','কাস্টমার বাছাই করুন।',1);return}
   if(!d.book){say('wSt','বইয়ের নাম লিখুন।',1);$('wBook').focus();return}
   if(!d.size||!d.foldN){say('wSt','কাগজের সাইজ ও ভাঁজ সংখ্যা বাছাই করুন।',1);return}
   if(num(d.totalFold)==null){say('wSt','মোট ভাঁজ লিখুন। বিল মোট ভাঁজের উপর হয়।',1);$('wTotalFold').focus();return}
+  if(num(d.rate)==null){say('wSt','রেট লিখুন।',1);$('wRate').focus();return}
   const c=wCalc();d.rate=c.rate;d.bill=c.bill;const was=!!editW;
   if(editW){const i=DB.work.findIndex(r=>r.id===editW.id);if(i>=0)DB.work[i]={...DB.work[i],...d}}else DB.work.push({id:uid(),inv:null,...d});
   persist();
@@ -450,7 +451,7 @@ function renderBills(){
   $('pending').innerHTML=(orphan?`<div class="warn">${bn(orphan)}টি এন্ট্রিতে কাস্টমার নেই। "দৈনিক কাজ এন্ট্রি" থেকে এডিট করে কাস্টমার দিন।</div>`:'')+(keys.length?keys.map(k=>{
     const L=g[k],miss=L.some(w=>itemRate(w)==null),noTf=L.some(w=>num(w.totalFold)==null),amt=sum(L,w=>(num(w.totalFold)||0)*(itemRate(w)||0));
     return `<div class="entry"><h3>${safe(L[0].book)}</h3><div class="meta">${safe(cust(L[0].cust).name)} · এন্ট্রি: ${bn(L.length)} · শিট: ${bn(sum(L,w=>num(w.sheets)))} · মোট ভাঁজ: ${bn(sum(L,w=>num(w.totalFold)))} · টাকা: ${money(amt)}</div>
-    ${miss?'<div class="warn" style="margin-top:8px">কিছু এন্ট্রির রেট নেই। সেটিংসে রেট দিয়ে আবার আসুন।</div>':''}
+    ${miss?'<div class="warn" style="margin-top:8px">কিছু এন্ট্রির রেট নেই। কাজের তালিকা থেকে এডিট করে রেট দিন।</div>':''}
     ${noTf?'<div class="warn" style="margin-top:8px">কিছু এন্ট্রিতে মোট ভাঁজ নেই। কাজের তালিকা থেকে এডিট করে মোট ভাঁজ দিন।</div>':''}
     <div class="acts" style="align-items:center"><input type="text" inputmode="decimal" placeholder="ছাড় (টাকা)" data-disc="${safe(k)}" style="width:150px;min-height:40px"><button class="btn sm" data-mk="${safe(k)}" ${miss||noTf?'disabled style="opacity:.5"':''}>বিল তৈরি করুন</button></div></div>`}).join(''):'<div class="empty">বিল তৈরির অপেক্ষায় কোনো বই নেই।</div>');
   const q=$('iq').value.trim().toLowerCase();
@@ -586,9 +587,7 @@ const SM={sName:'name',sCur:'cur',sPhone:'phone',sAddr:'addr',sPrefix:'prefix',s
 function applyS(){$('pName').textContent=S.name||'Press';document.title=(S.name||'Press')+' – হিসাব প্যানেল';foldOpts();
   const o=(a,s)=>{const v=s.value;s.innerHTML=a.map(x=>`<option>${safe(x)}</option>`).join('');if(a.includes(v))s.value=v};o(list(S.cats),$('eCat'));o(list(S.meth),$('pMethod'))}
 function initSettings(){const sz='<option value="">কোনোটি নয়</option>'+Object.entries(SIZE).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');$('sSize').innerHTML=sz;$('wSize').innerHTML='<option value="">বাছাই করুন</option>'+sz.slice(sz.indexOf('<option value="C"'));
-  Object.entries(SM).forEach(([id,k])=>{$(id).value=S[k]??'';$(id).addEventListener('input',()=>{const v=$(id).value;S[k]=(k==='p2'||k==='p3')?(num(v)||(k==='p2'?8:16)):v.trim();if(k==='name'&&!S.name)S.name='Wahidiya Press';persist();applyS()})});
-  const g=$('rateGrid');g.innerHTML='<div></div><div class="h">২ ভাঁজ</div><div class="h">৩ ভাঁজ</div>'+Object.keys(SIZE).map(k=>`<div><b>${SIZE[k]}</b></div><input data-r="${k}2" inputmode="decimal" placeholder="০" aria-label="${k} ২ ভাঁজ রেট"><input data-r="${k}3" inputmode="decimal" placeholder="০" aria-label="${k} ৩ ভাঁজ রেট">`).join('');
-  g.querySelectorAll('input').forEach(el=>{el.value=rates[el.dataset.r]??'';el.addEventListener('input',()=>{rates[el.dataset.r]=el.value.trim();persist();wCalc()})})}
+  Object.entries(SM).forEach(([id,k])=>{$(id).value=S[k]??'';$(id).addEventListener('input',()=>{const v=$(id).value;S[k]=(k==='p2'||k==='p3')?(num(v)||(k==='p2'?8:16)):v.trim();if(k==='name'&&!S.name)S.name='Wahidiya Press';persist();applyS()})});}
 $('exportBtn').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({db:DB,rates,settings:S},null,1)],{type:'application/json'}));a.download='wahidiya-backup-'+ymd(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 $('importBtn').addEventListener('click',()=>$('importFile').click());
 $('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
