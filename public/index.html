@@ -266,7 +266,7 @@ tr.sub td{background:#f7faf7;font-weight:700}tr.d1 td{border-top:2px solid #9db8
 </main>
 </div>
 <section id="printReport"></section>
-<div id="imgBox" hidden><div class="ibox"><img id="imgPrev" alt="দৈনিক সামারি"><div class="acts"><button class="btn or" type="button" id="imgShare">হোয়াটসঅ্যাপে পাঠান</button><button class="btn sec" type="button" id="imgDl">ডাউনলোড</button><button class="btn sec" type="button" id="imgClose">বন্ধ করুন</button></div><div class="st" id="imgSt" role="status"></div></div></div>
+<div id="imgBox" hidden><div class="ibox"><div class="acts" style="margin:0 0 12px;flex-wrap:nowrap"><button class="btn sec sm" type="button" id="imgPrevDay" style="flex:0 0 auto">‹ আগের দিন</button><input id="imgDay" type="date" aria-label="তারিখ" style="min-width:0"><button class="btn sec sm" type="button" id="imgNextDay" style="flex:0 0 auto">পরের দিন ›</button></div><img id="imgPrev" alt="দৈনিক সামারি"><div class="acts"><button class="btn or" type="button" id="imgShare">হোয়াটসঅ্যাপে পাঠান</button><button class="btn sec" type="button" id="imgDl">ডাউনলোড</button><button class="btn sec" type="button" id="imgClose">বন্ধ করুন</button></div><div class="st" id="imgSt" role="status"></div></div></div>
 <div id="boot">লোড হচ্ছে…</div>
 <div id="login" hidden><form id="loginForm"><div class="lg2">W</div><h2>Wahidiya Press</h2><p>পাসওয়ার্ড দিয়ে প্রবেশ করুন</p>
   <input id="lpw" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড" required>
@@ -667,20 +667,27 @@ function summaryCanvas(dt){
 }
 let imgBlob=null,imgName='',imgUrl='',imgDate='';
 function dlImg(){const a=document.createElement('a');a.href=imgUrl;a.download=imgName;document.body.appendChild(a);a.click();a.remove()}
-async function openSummary(){
-  const dt=$('wDate').value||ymd(new Date());
-  if(!dayEntries(dt).length){alert('এই তারিখে কোনো এন্ট্রি নেই।');return}
+async function buildSummary(dt){
+  imgDate=dt;const has=dayEntries(dt).length>0;
+  $('imgPrev').hidden=!has;$('imgShare').disabled=!has;$('imgDl').disabled=!has;
+  if(!has){imgBlob=null;say('imgSt',fd(dt)+' তারিখে কোনো এন্ট্রি নেই। অন্য তারিখ বাছুন।',1);return}
   const blob=await new Promise(r=>summaryCanvas(dt).toBlob(r,'image/png'));
-  if(!blob){alert('ছবি বানানো যায়নি।');return}
+  if(!blob){say('imgSt','ছবি বানানো যায়নি।',1);return}
+  if(imgDate!==dt)return;
   if(imgUrl)URL.revokeObjectURL(imgUrl);
-  imgBlob=blob;imgDate=dt;imgName='vaj-summary-'+dt+'.png';imgUrl=URL.createObjectURL(blob);
-  $('imgPrev').src=imgUrl;say('imgSt','');$('imgBox').hidden=false;
+  imgBlob=blob;imgName='vaj-summary-'+dt+'.png';imgUrl=URL.createObjectURL(blob);
+  $('imgPrev').src=imgUrl;say('imgSt','');
 }
+async function openSummary(){const dt=$('wDate').value||ymd(new Date());$('imgDay').value=dt;$('imgBox').hidden=false;await buildSummary(dt)}
+const shiftDay=n=>{const v=$('imgDay').value||ymd(new Date()),d=new Date(v+'T12:00:00');d.setDate(d.getDate()+n);$('imgDay').value=ymd(d);buildSummary(ymd(d))};
+$('imgPrevDay').addEventListener('click',()=>shiftDay(-1));$('imgNextDay').addEventListener('click',()=>shiftDay(1));
+$('imgDay').addEventListener('change',()=>{if($('imgDay').value)buildSummary($('imgDay').value)});
 $('wImg').addEventListener('click',openSummary);
 $('imgClose').addEventListener('click',()=>{$('imgBox').hidden=true});
 $('imgBox').addEventListener('click',e=>{if(e.target===$('imgBox'))$('imgBox').hidden=true});
 $('imgDl').addEventListener('click',()=>{dlImg();say('imgSt','ছবি ডাউনলোড হয়েছে।')});
 $('imgShare').addEventListener('click',async()=>{
+  if(!imgBlob)return;
   const T=rTot(dayEntries(imgDate)),f=new File([imgBlob],imgName,{type:'image/png'});
   if(navigator.canShare&&navigator.canShare({files:[f]})){
     try{await navigator.share({files:[f],title:S.name+' – দৈনিক সামারি',text:`${S.name} – ${fd(imgDate)}\nমোট ভাঁজ: ${bn(T.fold)}\nমোট টাকা: ${money(T.val)}`})}catch(e){}
