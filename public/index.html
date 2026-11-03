@@ -171,7 +171,7 @@ nav button .ic{display:inline-block;width:28px}nav button .sh2{display:none}
           <div class="f"><label for="wSheets">মোট শিট</label><input id="wSheets" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wForms">মোট ফর্মা <span class="hint">(শুধু তথ্য)</span></label><input id="wForms" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
           <div class="f"><label for="wTotalFold">মোট ভাঁজ <span class="hint">(এর উপর বিল হয়)</span> <span class="hint" id="wTfHint"></span></label><input id="wTotalFold" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
-          <div class="f"><label for="wRate">রেট <span class="hint">(প্রতি ভাঁজ, নিজে লিখুন)</span></label><input id="wRate" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+          <div class="f"><label for="wRate">রেট <span class="hint">(প্রতি হাজার ভাঁজে, নিজে লিখুন)</span></label><input id="wRate" class="sheetin" inputmode="decimal" autocomplete="off" placeholder="0"></div>
         </div></div>
       <div class="acts" style="margin-top:0"><button class="btn big-btn" type="submit" id="wSave">এন্ট্রি সেভ করুন</button><button class="btn sec big-btn" type="button" id="wClear">নতুন এন্ট্রি</button></div>
       <div class="st" id="wSt" role="status"></div>
@@ -395,12 +395,12 @@ function wCalc(){
   $('wTfHint').textContent=tfManual?'(ম্যানুয়াল — খালি করলে অটো হবে)':'(অটো: শিট × ভাঁজ)';
   const tf=num($('wTotalFold').value);
   rate=num($('wRate').value);
-  const bill=rate!=null&&tf!=null?tf*rate:null;syncChips();
+  const bill=rate!=null&&tf!=null?Math.round(tf*rate/1000*100)/100:null;syncChips(); /* রেট = প্রতি ১০০০ ভাঁজে */
   const td=DB.work.filter(w=>w.date===dt&&(!editW||w.id!==editW.id)),c=cid&&cid!=='__new'?cust(cid):null;
   const row=(k,v)=>v?`<div class="sr"><span>${k}</span><b>${v}</b></div>`:'';
   const bk=$('wBook').value.trim(),fm=$('wForms').value.trim();
   $('wSum').innerHTML=`<div class="sl">মোট টাকা</div><div class="sa">${bill!=null?money(bill):'—'}</div>`
-    +(tf!=null&&rate==null?'<div class="sw">রেট লিখুন। বিল = মোট ভাঁজ × রেট।</div>':'')
+    +(tf!=null&&rate==null?'<div class="sw">রেট লিখুন (প্রতি হাজার ভাঁজে)। বিল = মোট ভাঁজ ÷ ১০০০ × রেট।</div>':'')
     +(tf==null&&(sh!=null||sz||f)?'<div class="sw">মোট ভাঁজ লিখুন। বিল মোট ভাঁজের উপর হয়।</div>':'')
     +row('কাস্টমার',c&&c.name?safe(c.name):'')+row('বই',safe(bk))+row('সাইজ',sz?safe(SIZE[sz]):'')+row('ভাঁজ',f?bn(f)+' ভাঁজ ('+bn(pages(f))+' পৃষ্ঠা)':'')+row('শিট',sh!=null?bn(sh):'')+row('মোট ভাঁজ',tf!=null?bn(tf):'')+row('রেট',rate!=null?money(rate):'')+row('ফর্মা',fm?safe(fm):'')
     +(!sz&&!f&&!c&&!bk&&sh==null?'<div class="sf" style="margin-top:0">তথ্য দিলে এখানে হিসাব দেখাবে।</div>':'')
@@ -449,7 +449,7 @@ function renderBills(){
   const g={};DB.work.filter(w=>!w.inv&&w.cust).forEach(w=>{const k=w.cust+'|'+w.book;(g[k]=g[k]||[]).push(w)});
   const orphan=DB.work.filter(w=>!w.inv&&!w.cust).length,keys=Object.keys(g);
   $('pending').innerHTML=(orphan?`<div class="warn">${bn(orphan)}টি এন্ট্রিতে কাস্টমার নেই। "দৈনিক কাজ এন্ট্রি" থেকে এডিট করে কাস্টমার দিন।</div>`:'')+(keys.length?keys.map(k=>{
-    const L=g[k],miss=L.some(w=>itemRate(w)==null),noTf=L.some(w=>num(w.totalFold)==null),amt=sum(L,w=>(num(w.totalFold)||0)*(itemRate(w)||0));
+    const L=g[k],miss=L.some(w=>itemRate(w)==null),noTf=L.some(w=>num(w.totalFold)==null),amt=sum(L,w=>w.bill!=null?w.bill:(num(w.totalFold)||0)*(itemRate(w)||0)/1000);
     return `<div class="entry"><h3>${safe(L[0].book)}</h3><div class="meta">${safe(cust(L[0].cust).name)} · এন্ট্রি: ${bn(L.length)} · শিট: ${bn(sum(L,w=>num(w.sheets)))} · মোট ভাঁজ: ${bn(sum(L,w=>num(w.totalFold)))} · টাকা: ${money(amt)}</div>
     ${miss?'<div class="warn" style="margin-top:8px">কিছু এন্ট্রির রেট নেই। কাজের তালিকা থেকে এডিট করে রেট দিন।</div>':''}
     ${noTf?'<div class="warn" style="margin-top:8px">কিছু এন্ট্রিতে মোট ভাঁজ নেই। কাজের তালিকা থেকে এডিট করে মোট ভাঁজ দিন।</div>':''}
@@ -466,7 +466,7 @@ $('iq').addEventListener('input',renderBills);
 $('pending').addEventListener('click',e=>{const b=e.target.closest('button[data-mk]');if(!b)return;
   const k=b.dataset.mk,L=DB.work.filter(w=>!w.inv&&w.cust&&(w.cust+'|'+w.book)===k).sort((a,c)=>(a.date||'').localeCompare(c.date||''));if(!L.length)return;
   const disc=num(document.querySelector(`[data-disc="${CSS.escape(k)}"]`).value)||0;
-  const items=L.map(w=>{const r=itemRate(w),s=num(w.sheets)||0,tf=num(w.totalFold)||0;return{date:w.date,size:w.size,foldN:w.foldN,sheets:s,totalFold:tf,rate:r,amount:tf*r}});
+  const items=L.map(w=>{const r=itemRate(w),s=num(w.sheets)||0,tf=num(w.totalFold)||0;return{date:w.date,size:w.size,foldN:w.foldN,sheets:s,totalFold:tf,rate:r,amount:w.bill!=null?w.bill:tf*r/1000}});
   const sub=sum(items,x=>x.amount);if(disc>sub){alert('ছাড় মোট টাকার চেয়ে বেশি হতে পারে না।');return}
   const id=uid();DB.seq++;const inv={id,no:S.prefix+String(DB.seq).padStart(4,'0'),date:ymd(new Date()),cust:L[0].cust,book:L[0].book,items,sub,disc,total:sub-disc};
   DB.inv.push(inv);L.forEach(w=>w.inv=id);persist();renderBills();alert('ইনভয়েস '+inv.no+' তৈরি হয়েছে।')});
