@@ -1,0 +1,10 @@
+{
+  "name": "wahidiya-press",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wahidiya Press – কাজ, বিল, লেজার ও খরচের হিসাব প্যানেল",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@neondatabase/serverless": ">=0.10.4"
+  }
+}
